@@ -108,7 +108,7 @@ export class AzureOpenAIResponse implements INodeType {
 					alwaysOpenEditWindow: true,
 					rows: 4,
 				},
-				description: 'The input for the model. Can be a string, {{ $json.messages }}, or a message array',
+				description: 'The input for the model. Can be a string, {{ $json.messages }}, or a message array.',
 				placeholder: 'Enter text or {{ $json.messages }}',
 			},
 			{
@@ -120,7 +120,7 @@ export class AzureOpenAIResponse implements INodeType {
 					alwaysOpenEditWindow: true,
 					rows: 4,
 				},
-				description: 'Optional tools/functions from external source (e.g., webhook). Can be JSON string or use expressions like {{ $json.tools }}',
+				description: 'Optional tools/functions from external source (e.g., webhook). Can be JSON string or use expressions like {{ $json.tools }}.',
 				placeholder: '{{ $json.tools }} or paste JSON array',
 			},
 
