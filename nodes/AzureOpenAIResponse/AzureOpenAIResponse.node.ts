@@ -109,7 +109,7 @@ export class AzureOpenAIResponse implements INodeType {
 					rows: 4,
 				},
 				description: 'The input for the model. Can be a string, {{ $json.messages }}, or a message array.',
-				placeholder: 'Enter text or {{ $json.messages }}',
+					placeholder: 'Enter text, {{ $json.messages }}, or {{ $json.body.messages }}',
 			},
 			{
 				displayName: 'Tools (Dynamic)',
@@ -415,6 +415,39 @@ export class AzureOpenAIResponse implements INodeType {
 					}
 				}
 
+				// Normalize common object-shaped inputs (e.g., webhook payloads)
+				if (typeof input === 'object' && !Array.isArray(input)) {
+					const obj = input as IDataObject;
+					// Top-level messages array
+					if (Array.isArray(obj.messages)) {
+						input = obj.messages as IDataObject[];
+					} else if (obj.body && typeof obj.body === 'object' && Array.isArray((obj.body as IDataObject).messages as unknown as any[])) {
+						// Payloads shaped like { body: { messages: [...] }}
+						input = ((obj.body as IDataObject).messages as unknown) as IDataObject[];
+					} else if (obj.input && (typeof obj.input === 'string' || Array.isArray(obj.input as unknown as any[]))) {
+						// { input: string | message[] }
+						input = obj.input as string | IDataObject[];
+					} else if (obj.message && Array.isArray(obj.message as unknown as any[])) {
+						// { message: message[] }
+						input = obj.message as unknown as IDataObject[];
+					} else if (obj.message && typeof obj.message === 'object' && (obj.message as IDataObject).role && (obj.message as IDataObject).content) {
+						// { message: { role, content } }
+						input = [obj.message as IDataObject];
+					} else if ((obj as IDataObject).role && (obj as IDataObject).content) {
+						// Single message object provided
+						input = [obj as IDataObject];
+					} else if (typeof obj.content === 'string') {
+						// { content: string }
+						input = obj.content as string;
+					} else if (typeof obj.text === 'string') {
+						// { text: string }
+						input = obj.text as string;
+					} else if (typeof obj.prompt === 'string') {
+						// { prompt: string }
+						input = obj.prompt as string;
+					}
+				}
+
 				// Validate message array format if it's an array
 				if (Array.isArray(input)) {
 					for (const msg of input) {
@@ -647,6 +680,14 @@ export class AzureOpenAIResponse implements INodeType {
 					// Provide helpful hints for common errors
 					if (statusCode === 400) {
 						errorMessage = `Bad Request: ${errorMessage}. Please check your input parameters.`;
+						// Add hint for common input-shape mistake
+						try {
+							const bodyData = apiError.response?.data as IDataObject | undefined;
+							const bodyErrorMsg = (bodyData?.error as IDataObject | undefined)?.message as string | undefined;
+							if (bodyErrorMsg && bodyErrorMsg.toLowerCase().includes("invalid type for 'input'")) {
+								errorMessage += ' Hint: set Input to a string or an array of messages. If your payload is from a webhook, use {{ $json.body.messages }} (not {{ $json.body }}).';
+							}
+						} catch {}
 					} else if (statusCode === 401) {
 						errorMessage = 'Authentication failed. Please check your API key in credentials.';
 					} else if (statusCode === 404) {
