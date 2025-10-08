@@ -542,18 +542,22 @@ export class AzureOpenAIResponse implements INodeType {
 					// Add dynamic tools to array
 					if (parsedDynamicTools && Array.isArray(parsedDynamicTools)) {
 						for (const tool of parsedDynamicTools) {
-							// Handle different formats
-							if (tool.type === 'function' && tool.function) {
-								// Already in correct format: {type: "function", function: {...}}
-								toolsArray.push(tool);
-							} else if (tool.name && tool.parameters) {
-								// Just the function definition: {name: "...", parameters: {...}}
-								toolsArray.push({
+							// Normalize to Responses API format
+							if (
+								(tool.type === 'function') ||
+								(!tool.type && (tool.function || tool.name || tool.parameters))
+							) {
+								const fnDef = (tool.function ? (tool.function as IDataObject) : (tool as IDataObject));
+								const normalized: IDataObject = {
 									type: 'function',
-									function: tool,
-								});
+									name: fnDef.name,
+									description: fnDef.description,
+									parameters: fnDef.parameters,
+								};
+								toolsArray.push(normalized);
 							} else {
-								toolsArray.push(tool);
+								// Pass through built-in tools like code_interpreter, file_search, image_generation
+								toolsArray.push({ type: tool.type });
 							}
 						}
 					}
@@ -570,11 +574,14 @@ export class AzureOpenAIResponse implements INodeType {
 						try {
 							const functionDef = typeof customFunction.function === 'string'
 								? JSON.parse(customFunction.function as string)
-								: customFunction.function;
-							toolsArray.push({
+								: (customFunction.function as IDataObject);
+							const normalized: IDataObject = {
 								type: 'function',
-								function: functionDef,
-							});
+								name: functionDef.name,
+								description: functionDef.description,
+								parameters: functionDef.parameters,
+							};
+							toolsArray.push(normalized);
 						} catch (error) {
 							throw new NodeOperationError(this.getNode(), 'Invalid JSON in function definition', {
 								itemIndex,
@@ -686,6 +693,9 @@ export class AzureOpenAIResponse implements INodeType {
 							const bodyErrorMsg = (bodyData?.error as IDataObject | undefined)?.message as string | undefined;
 							if (bodyErrorMsg && bodyErrorMsg.toLowerCase().includes("invalid type for 'input'")) {
 								errorMessage += ' Hint: set Input to a string or an array of messages. If your payload is from a webhook, use {{ $json.body.messages }} (not {{ $json.body }}).';
+							}
+							if (bodyErrorMsg && bodyErrorMsg.toLowerCase().includes("missing required parameter: 'tools[0].name'")) {
+								errorMessage += ' Hint: provide tools as an array of function definitions with top-level name/parameters, e.g., { type: "function", name: "get_current_weather", parameters: {...} }. If using {{ $json.body.tools }}, we normalize { type: "function", function: { name, parameters } } automatically.';
 							}
 						} catch {}
 					} else if (statusCode === 401) {
