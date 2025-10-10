@@ -96,3 +96,6 @@ temp/
 
 docs/
 docs/*
+
+.rules
+.rules/*

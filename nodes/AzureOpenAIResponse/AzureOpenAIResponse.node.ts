@@ -109,7 +109,7 @@ export class AzureOpenAIResponse implements INodeType {
 					rows: 4,
 				},
 				description: 'The input for the model. Can be a string, {{ $json.messages }}, or a message array.',
-					placeholder: 'Enter text, {{ $json.messages }}, or {{ $json.body.messages }}',
+					placeholder: 'e.g. customerChatMessages',
 			},
 			{
 				displayName: 'Tools (Dynamic)',
@@ -121,7 +121,7 @@ export class AzureOpenAIResponse implements INodeType {
 					rows: 4,
 				},
 				description: 'Optional tools/functions from external source (e.g., webhook). Can be JSON string or use expressions like {{ $json.tools }}.',
-				placeholder: '{{ $json.tools }} or paste JSON array',
+				placeholder: 'e.g. webhookToolsList',
 			},
 
 			// Conversation & State

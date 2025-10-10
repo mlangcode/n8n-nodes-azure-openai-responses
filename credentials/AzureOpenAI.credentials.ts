@@ -15,7 +15,7 @@ export class AzureOpenAI implements ICredentialType {
 			name: 'resourceName',
 			type: 'string',
 			default: '',
-			placeholder: 'my-resource-name',
+			placeholder: 'e.g. azureOpenAiProd',
 			description: 'The name of your Azure OpenAI resource',
 			required: true,
 		},
