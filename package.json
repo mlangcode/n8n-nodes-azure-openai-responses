@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-azure-openai-responses",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "n8n community node for Azure OpenAI Response API",
   "keywords": [
     "n8n-community-node-package",
@@ -55,4 +55,3 @@
   },
   "dependencies": {}
 }
-
